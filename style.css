@@ -1,0 +1,66 @@
+
+:root {
+    --bg-color: #1c1c1c;
+    --text-color: #ebebeb;
+    --glow-color: rgba(235, 235, 235, 0.6);
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg-color);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+nav {
+    box-sizing: border-box;
+    width: 100%;
+    background: var(--bg-color);
+    /* display: flex; */
+    justify-content: flex-end;
+    align-items: center;
+    padding: 2rem 40px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+}
+
+.nav-links {
+    display: flex;
+    justify-self: end;
+    gap: 2.5rem;
+    user-select: none;
+}
+
+.nav-links a {
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    position: relative;
+    text-shadow: 0 0 6px var(--glow-color);
+    transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+
+.nav-links a:hover {
+    text-shadow:
+    0 0 8px var(--glow-color),
+    0 0 16px var(--glow-color);
+}  
+
+.nav-links a:hover::after {
+    transform: scaleX(1);
+}
+
+.nav-name {
+    display: flex;
+    justify-self: center;
+    font-size: 35px;
+    user-select: none;
+    color: var(--text-color);
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 6px var(--glow-color);
+}
