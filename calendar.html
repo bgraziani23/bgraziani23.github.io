@@ -1,0 +1,152 @@
+<head>
+    <title>CoolSplish</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Barlow Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Aldrich&family=Barlow+Condensed:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            background: #1c1c1c;
+        }
+
+        /* Centers only the table */
+        .table-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 200px);
+        }
+
+        .barlow-condensed-regular {
+            font-family: "Barlow Condensed", sans-serif;
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        table {
+            border-collapse: collapse;
+            outline: 20px solid #ebebeb; /* grows outward only */
+            border-radius: 12px;
+            text-shadow: 0 0 6px rgba(235, 235, 235, 0.75);
+            outline-offset: 0;
+
+            box-shadow: 0 0 55px rgba(235, 235, 235, 0.75);
+        }
+
+        td {
+            width: 60px;
+            height: 60px;
+            user-select: none;
+            box-sizing: border-box;
+            color: #ebebeb;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            text-align: center;
+            font-family: "Barlow Condensed", sans-serif;
+            font-weight: 400;
+            font-style: normal;
+            font-size: 20px;
+        }
+
+        tr:last-child td:last-child {
+            background: #ebebeb;
+            border-top-left-radius: 12px;
+            /* box-shadow: 0 0 20px rgba(235, 235, 235, 0.75); */
+        }
+
+        /* PIECE CODE */
+        .piece {
+            width: 60px;
+            height: 60px;
+            background: #ebebeb;
+            position: absolute;
+            cursor: grab;
+        }
+
+    </style>
+</head>
+<body>
+
+  <!-- Nav Bar -->
+  <nav>
+    <div></div>
+    <div class="nav-name">Calendar Puzzle</div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="projects.html">Projects</a>
+      <a href="contact.html">Contact</a>
+    </div>
+</nav>
+  <!-- Nav Bar -->
+<div class="table-wrapper">
+    <table id="grid">
+        <tbody>
+                <!-- 9 rows, 6 columns -->
+            <tr>
+                <td>JAN</td> <td>FEB</td> <td>MAR</td> <td>APR</td> <td>1</td> <td>2</td> <td>3</td> <td>MON</td> <td>TUE</td>
+            </tr>
+            <tr>
+                <td>MAY</td> <td>4</td> <td>5</td> <td>6</td> <td>7</td> <td>8</td> <td>9</td> <td>WED</td><td></td>
+            </tr>
+            <tr>
+                <td>JUN</td> <td>10</td> <td>11</td> <td>12</td> <td>13</td> <td>31</td> <td>15</td> <td>THU</td><td></td>
+            </tr>
+            <tr>
+                <td>JUL</td> <td>16</td> <td>17</td> <td>18</td> <td>19</td> <td>20</td> <td>21</td> <td>FRI</td> <td>SAT</td>
+            </tr>
+            <tr>
+                <td>AUG</td> <td>22</td> <td>23</td> <td>24</td> <td>25</td> <td>26</td> <td>27</td> <td></td> <td>SUN</td>
+            </tr>
+            <tr>
+                <td>SEP</td> <td>OCT</td> <td>NOV</td> <td>DEC</td> <td>28</td> <td>29</td> <td>30</td> <td>14</td><td></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="piece"></div>
+
+
+<script>
+    const piece = document.querySelector('.piece');
+    const grid = document.getElementById('grid');
+
+    // Example drag logic
+    let offsetX, offsetY;
+    let isDragging = false;
+
+    piece.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      offsetX = e.clientX - piece.offsetLeft;
+      offsetY = e.clientY - piece.offsetTop;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      piece.style.left = `${e.clientX - offsetX}px`;
+      piece.style.top = `${e.clientY - offsetY}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      snapToGrid(piece);
+    });
+
+    function snapToGrid(piece) {
+      const gridRect = grid.getBoundingClientRect();
+      const cellSize = 60;
+      const relX = piece.offsetLeft - gridRect.left;
+      const relY = piece.offsetTop - gridRect.top;
+      const snappedX = Math.round(relX / cellSize) * cellSize;
+      const snappedY = Math.round(relY / cellSize) * cellSize;
+      piece.style.left = `${gridRect.left + snappedX}px`;
+      piece.style.top = `${gridRect.top + snappedY}px`;
+    }
+  </script>
+
+</body>
