@@ -119,6 +119,34 @@
     const ROWS = 6;
     const COLS = 9;
 
+    const answerGrid = [
+        ["JAN", "FEB", "MAR", "APR", 1, 2, 3, "MON", "TUE"],
+        ["MAY", 4, 5, 6, 7, 8, 9, "WED", "BLANK"],
+        ["JUN", 10, 11, 12, 13, 31, 15, "THU", "BLANK"],
+        ["JUL", 16, 17, 18, 19, 20, 21, "FRI", "SAT"],
+        ["AUG", 22, 23, 24, 25, 26, 27, "BLANK", "SUN"],
+        ["SEP", "OCT", "NOV", "DEC", 28, 29, 30, 14, "BLOCKED"]
+    ]
+
+    // DATE
+    const currentDate = new Date();
+
+    const dayOfWeekNumber = currentDate.getDay();
+    const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+    const dayOfWeekName = days[dayOfWeekNumber];
+
+    const monthNumber = currentDate.getMonth();
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    const monthName = months[monthNumber];
+
+    const dateOfMonth = currentDate.getDate();
+
+    const answers = [dayOfWeekName, monthName, dateOfMonth];
+    // const answers = ["JUN", "NOV", "TUE"];
+
+    const startTime = performance.now();
+    let winShown = false;
+
     /*
     Grid state:
     null = empty
@@ -366,6 +394,101 @@
 
         piece.el.style.left = `${gridRect.left + col * CELL_SIZE}px`;
         piece.el.style.top = `${gridRect.top + row * CELL_SIZE}px`;
+
+        checkWin(this);
+    }
+
+    function checkWin() {
+        let openCells = [];
+        for (let i = 0; i < gridState.length; i++) {
+            // The outer loop traverses the rows
+            for (let j = 0; j < gridState[i].length; j++) {
+                if (answerGrid[i][j] != "BLOCKED" && gridState[i][j] == null) {
+                    openCells.push([i, j])
+                }
+            }
+        }
+        
+
+        if (openCells.length == 3) {
+            for (let i = 0; i < 3; i++) {
+                if (!answers.includes(answerGrid[openCells[i][0]][openCells[i][1]])) return;
+            }
+            
+            showWinWindow();
+
+        }
+    }
+
+    function showWinWindow() {
+        if (winShown) return; // prevent duplicates
+        winShown = true;
+
+        const elapsedMs = performance.now() - startTime;
+        const seconds = Math.floor(elapsedMs / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+
+        const timeString =
+            minutes > 0
+                ? `${minutes}m ${remainingSeconds}s`
+                : `${remainingSeconds}s`;
+
+        // Overlay
+        const overlay = document.createElement("div");
+        overlay.style.position = "fixed";
+        overlay.style.top = "0";
+        overlay.style.left = "0";
+        overlay.style.width = "100vw";
+        overlay.style.height = "100vh";
+        overlay.style.background = "rgba(0, 0, 0, 0.6)";
+        overlay.style.display = "flex";
+        overlay.style.alignItems = "center";
+        overlay.style.justifyContent = "center";
+        overlay.style.zIndex = "1000";
+
+        // Window
+        const windowEl = document.createElement("div");
+        windowEl.style.background = "#1c1c1c";
+        windowEl.style.color = "#ebebeb";
+        windowEl.style.padding = "30px 40px";
+        windowEl.style.minWidth = "300px";
+        windowEl.style.position = "relative";
+        windowEl.style.fontFamily = '"Barlow Condensed", sans-serif';
+        windowEl.style.boxShadow = "0 0 40px rgba(235,235,235,0.4)";
+        windowEl.style.border = "2px solid #ebebeb";
+
+        // Close button
+        const closeBtn = document.createElement("div");
+        closeBtn.textContent = "✕";
+        closeBtn.style.position = "absolute";
+        closeBtn.style.top = "10px";
+        closeBtn.style.right = "15px";
+        closeBtn.style.cursor = "pointer";
+        closeBtn.style.fontSize = "20px";
+
+        closeBtn.onclick = () => overlay.remove();
+
+        // Title
+        const title = document.createElement("div");
+        title.textContent = "You Win!";
+        title.style.fontSize = "36px";
+        title.style.marginBottom = "10px";
+        title.style.textAlign = "center";
+        title.style.textShadow = "0 0 10px rgba(235,235,235,0.6)";
+
+        // Time text
+        const timeText = document.createElement("div");
+        timeText.textContent = `Completed in ${timeString}`;
+        timeText.style.fontSize = "20px";
+        timeText.style.textAlign = "center";
+        timeText.style.opacity = "0.9";
+
+        windowEl.appendChild(closeBtn);
+        windowEl.appendChild(title);
+        windowEl.appendChild(timeText);
+        overlay.appendChild(windowEl);
+        document.body.appendChild(overlay);
     }
 
     function clearPieceFromGrid(piece) {
