@@ -72,6 +72,18 @@
             position: absolute;
         }
 
+        #timer {
+            position: fixed;
+            top: 120px;
+            right: 30px;
+            color: #ebebeb;
+            font-size: 28px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 8px rgba(235, 235, 235, 0.6);
+            z-index: 100;
+            user-select: none;
+        }
+
     </style>
 </head>
 <body>
@@ -88,6 +100,9 @@
     </div>
 </nav>
   <!-- Nav Bar -->
+
+<div id="timer" class="barlow-condensed-regular">0:00</div>
+
 <div class="table-wrapper">
     <table id="grid">
         <tbody>
@@ -144,8 +159,28 @@
     const answers = [dayOfWeekName, monthName, dateOfMonth];
     // const answers = ["JUN", "NOV", "TUE"];
 
+    const controller = new AbortController();
+    const signal = controller.signal;
+
     const startTime = performance.now();
     let winShown = false;
+
+    const timerEl = document.getElementById("timer");
+    function updateTimer() {
+        if (winShown) return;
+
+        const elapsedMs = performance.now() - startTime;
+        const totalSeconds = Math.floor(elapsedMs / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+
+        timerEl.textContent =
+            `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+        requestAnimationFrame(updateTimer);
+    }
+
+    updateTimer();
 
     /*
     Grid state:
@@ -290,20 +325,20 @@
                 this.el.style.cursor = "grabbing";
 
                 clearPieceFromGrid(this);
-            });
+            }, { signal });
 
             document.addEventListener("mousemove", e => {
                 if (!dragging) return;
                 this.el.style.left = `${e.clientX - offsetX}px`;
                 this.el.style.top = `${e.clientY - offsetY}px`;
-            });
+            }, { signal });
 
             document.addEventListener("mouseup", () => {
                 if (!dragging) return;
                 dragging = false;
                 this.el.style.cursor = "grab";
                 trySnap(this);
-            });
+            }, { signal });
         }
 
         addOutline() {
@@ -423,6 +458,8 @@
     function showWinWindow() {
         if (winShown) return; // prevent duplicates
         winShown = true;
+
+        controller.abort(); 
 
         const elapsedMs = performance.now() - startTime;
         const seconds = Math.floor(elapsedMs / 1000);
