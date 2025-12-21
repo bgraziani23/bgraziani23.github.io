@@ -560,7 +560,7 @@
                 break;
             }
         }
-    });
+    }, { signal });
 
     document.addEventListener("keydown", e => {
         if (e.key.toLowerCase() === "r" && hoveredPiece && hoveredCell) {
@@ -569,7 +569,7 @@
         if (e.key.toLowerCase() === "f" && hoveredPiece) {
             flipPiece(hoveredPiece);
         }
-    });
+    }, { signal });
 
     function rotatePiece(piece, pivot) {
         if (!pivot) return;
