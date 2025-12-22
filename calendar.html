@@ -598,6 +598,8 @@
         const newPiece = new Piece(id, rotatedShape, left, top, flipped);
         newPiece.color = newPiece.flipped ? "#ffcccc" : "#ebebeb";
         hoveredPiece = newPiece;
+
+        trySnap(newPiece);
     }
 
     function flipPiece(piece) {
@@ -639,6 +641,8 @@
         });
 
         hoveredPiece = newPiece;
+
+        trySnap(newPiece);
     }
 
 
