@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food pantries</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+function getText(key) {
+  if (typeof translations !== "undefined" && typeof currentLanguage !== "undefined" &&
+      translations[currentLanguage] && translations[currentLanguage][key]) {
+    return translations[currentLanguage][key];
+  }
+  if (typeof translations !== "undefined" && translations.en && translations.en[key]) {
+    return translations.en[key];
+  }
+  return key;
+}
+
+</script>
+    <style>
+        /* Style global unifié */
+        body { font-family: "Arial", sans-serif; margin: 0; display: flex; height: 100vh; background: #ffffff; }
+        
+        /* SIDEBAR GAUCHE */
+        .sidebar { 
+            width: 240px;
+            background: #f4f6f7; 
+            border-right: 1px solid #ccc; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 15px;
+            box-sizing: border-box;
+            z-index: 1000;
+        }
+
+        .sidebar h2 { font-size: 18px; margin-top: 0; text-decoration: underline; color: #2c3e50; }
+
+        .btn-sidebar { 
+            width: 100%; 
+            padding: 12px; 
+            margin-bottom: 10px; 
+            background: #34495e; 
+            color: white; 
+            border: none;
+            border-radius: 4px;
+            text-align: left; 
+            font-weight: bold; 
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .btn-sidebar:hover { background: #2c3e50; }
+
+        .filter-group { 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            background: #fff; 
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+        .filter-group h3 { margin: 0 0 10px 0; font-size: 16px; color: #2c3e50; }
+        .filter-item { display: block; margin-bottom: 5px; font-size: 13px; cursor: pointer; }
+
+        /* ZONE PRINCIPALE (CARTE) */
+        .main-content { flex-grow: 1; position: relative; }
+        #map { width: 100%; height: 100%; }
+
+        /* VUES SUPERPOSÉES */
+        .view-section { 
+            display: none; 
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            background: white; 
+            z-index: 2000; 
+            padding: 30px; 
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        .view-section.active { display: block; }
+
+        /* FORMULAIRES */
+        .form-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; background: #fafafa; border-radius: 4px; }
+        .form-section h3 { margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 5px; font-size: 16px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        input:not([type="checkbox"]), select, textarea { width: 100%; padding: 8px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        label { font-size: 13px; font-weight: bold; color: #333; }
+
+        /* MODALES */
+        .modal-overlay { 
+            display: none; position: fixed; top: 0; left: 0; 
+            width: 100%; height: 100%; background: rgba(0,0,0,0.5); 
+            z-index: 3000; justify-content: center; align-items: center; 
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; border-radius: 8px; padding: 20px; width: 400px; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        #saved-modal { left: 240px; width: calc(100% - 240px); }
+
+        .btn-close { position: absolute; top: 5px; right: 10px; cursor: pointer; font-size: 20px; font-weight: bold; color: #888; }
+        .btn-close:hover { color: #333; }
+
+        /* BOUTONS ACTIONS */
+        .btn-action { padding: 10px 20px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; margin-right: 5px; transition: background 0.2s; }
+        .btn-save { background: #3498db; color: white; }
+        .btn-save:hover { background: #2980b9; }
+        .btn-donate { background: #2ecc71; color: white; }
+        .btn-donate:hover { background: #27ae60; }
+        .btn-remove { background: #e74c3c; color: white; }
+        .btn-remove:hover { background: #c0392b; }
+        
+        .btn-cancel { background: #95a5a6; color: white; padding: 10px 20px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; transition: background 0.2s; }
+        .btn-cancel:hover { background: #7f8c8d; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2 style="cursor:pointer;" onclick="showView('map-view')" data-i18n="title">
+            PantryPoint
+        </h2>     
+        
+        <div style="margin-bottom: 15px;">
+            <label for="lang-select" style="font-size: 12px;" data-i18n="lang_label">Language:</label>
+            <select id="lang-select" style="margin: 0; padding: 6px; margin-top: 4px;" onchange="changeLanguage()">
+                <option>English</option>
+                <option>Español</option>
+                <option>Français</option>
+            </select>
+        </div>
+
+        <button class="btn-sidebar" onclick="toggleSidebarSaved()" data-i18n="view_saved">View Saved Pantries</button>
+        <button class="btn-sidebar" onclick="toggleSidebarView('login-view')" data-i18n="update_info">Update Pantry Info</button>
+        <button class="btn-sidebar" onclick="toggleSidebarView('donate-view')" data-i18n="donate">Donate</button>
+
+        <div class="filter-group">
+            <h3 data-i18n="filters">Nutrition Filters</h3>
+            <label class="filter-item"><input type="checkbox" class="nutri-filter" value="isNutFree" onchange="applyFilters()"> <span data-i18n="nut_free">Nut free</span></label>
+            <label class="filter-item"><input type="checkbox" class="nutri-filter" value="isLactoseFree" onchange="applyFilters()"> <span data-i18n="lactose_free">Lactose Free</span></label>
+            <label class="filter-item"><input type="checkbox" class="nutri-filter" value="isVegetarian" onchange="applyFilters()"> <span data-i18n="vegetarian">Vegetarian</span></label>
+            <label class="filter-item"><input type="checkbox" class="nutri-filter" value="isVegan" onchange="applyFilters()"> <span data-i18n="vegan">Vegan</span></label>
+            <label class="filter-item"><input type="checkbox" class="nutri-filter" value="isGlutenFree" onchange="applyFilters()"> <span data-i18n="gluten_free">Gluten Free</span></label>
+        </div>
+
+        <button class="btn-sidebar" onclick="toggleSidebarView('help-view')" data-i18n="help_faq" style="margin-top: auto;">Help / FAQ</button>
+    </div>
+
+    <div class="main-content">
+        <div id="map"></div>
+
+        <div id="login-view" class="view-section">
+            <button class="btn-cancel" onclick="showView('map-view')" data-i18n="back">← Back</button>
+            <div style="max-width:350px; margin: 50px auto; border: 1px solid #ccc; border-radius: 8px; background: #fafafa; padding: 20px;">
+                <h2 style="text-align:center; color: #2c3e50;" data-i18n="signin">Sign in to your account</h2>
+                <form onsubmit="event.preventDefault(); showView('update-view')">
+                    <label data-i18n="email">Email address</label>
+                    <input type="text" id="login-email">
+                    <label data-i18n="password">Password</label>
+                    <input type="password" required>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button type="submit" class="btn-action btn-save" style="flex: 1; margin: 0;" data-i18n="submit">Submit</button>
+                        <button type="button" class="btn-cancel" style="flex: 1;" onclick="showView('map-view')" data-i18n="cancel">Cancel</button>
+                    </div>
+                </form>
+                <p style="font-size:12px; text-align:center; margin-top: 15px;"><a href="#" data-i18n="register">Don't have an account? Register Here</a></p>
+            </div>
+        </div>
+
+        <div id="update-view" class="view-section">
+            <button class="btn-cancel" onclick="showView('map-view')" data-i18n="back">← Back</button>
+            <h2 data-i18n="update_title">Update Pantry Information</h2>
+            <form onsubmit="saveUpdate(event)" class="form-section">
+                <label data-i18n="add_photo">Add a photo</label>
+                <input type="file">
+                <label data-i18n="update_desc">Update Pantry Description</label>
+                <textarea rows="3" data-i18n-placeholder="desc_placeholder" placeholder="Current Description..."></textarea>
+                <label data-i18n="update_inv">Update Inventory</label>
+                <input type="text" data-i18n-placeholder="search_item" placeholder="Search for item">
+                <label data-i18n="update_tags">Update Directory Tags</label>
+                <input type="text" data-i18n-placeholder="search_tag" placeholder="Search for tag">
+                
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button type="submit" class="btn-action btn-donate" style="margin: 0;" data-i18n="save_changes">Save Changes</button>
+                    <button type="button" class="btn-cancel" onclick="showView('map-view')" data-i18n="cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="donate-view" class="view-section">
+            <button class="btn-cancel" onclick="showView('map-view')" data-i18n="back">← Back</button>
+            <h2 data-i18n="donate_title">Make a Donation</h2>
+            
+            <form onsubmit="submitDonation(event)">
+                <div class="form-section">
+                    <h3 data-i18n="org_info">Organization Information</h3>
+                    <label data-i18n="search_org">Search for Organization</label>
+                    <select id="donate-org">
+                        <option value="" data-i18n="select">-- Select --</option>
+                        <option value="j_pantry">J. Pantry</option>
+                        <option value="e_pantry">E. Pantry</option>
+                        <option value="a_pantry">A. Pantry</option>
+                        <option value="b_pantry">B. Pantry</option>
+                        <option value="g_pantry">G. Pantry</option>
+                    </select>
+                    <label data-i18n="amount">Amount</label>
+                    <input id="donate-amount" type="text" inputmode="decimal" placeholder="$ xx.xx">
+                </div>
+
+                <div class="form-section">
+                    <h3 data-i18n="cardholder_info">Cardholder Information</h3>
+                    <div class="grid-2">
+                        <div><label data-i18n="first_name">First Name</label><input type="text"></div>
+                        <div><label data-i18n="last_name">Last Name</label><input type="text"></div>
+                    </div>
+                    <label data-i18n="address">Address</label><input type="text">
+                    <div class="grid-3">
+                        <div><label data-i18n="city">City</label><input type="text"></div>
+                        <div><label data-i18n="state">State</label>
+                            <select>
+                                <option value="" data-i18n="select">-- Select --</option>
+                                <option>Alabama</option>
+                                <option>Alaska</option>
+                                <option>Arizona</option>
+                                <option>Arkansas</option>
+                                <option>California</option>
+                                <option>Colorado</option>
+                                <option>Connecticut</option>
+                                <option>Delaware</option>
+                                <option>Florida</option>
+                                <option>Georgia</option>
+                                <option>Hawaii</option>
+                                <option>Idaho</option>
+                                <option>Illinois</option>
+                                <option>Indiana</option>
+                                <option>Iowa</option>
+                                <option>Kansas</option>
+                                <option>Kentucky</option>
+                                <option>Louisiana</option>
+                                <option>Maine</option>
+                                <option>Maryland</option>
+                                <option>Massachusetts</option>
+                                <option>Michigan</option>
+                                <option>Minnesota</option>
+                                <option>Mississippi</option>
+                                <option>Missouri</option>
+                                <option>Montana</option>
+                                <option>Nebraska</option>
+                                <option>Nevada</option>
+                                <option>New Hampshire</option>
+                                <option>New Jersey</option>
+                                <option>New Mexico</option>
+                                <option>New York</option>
+                                <option>North Carolina</option>
+                                <option>North Dakota</option>
+                                <option>Ohio</option>
+                                <option>Oklahoma</option>
+                                <option>Oregon</option>
+                                <option>Pennsylvania</option>
+                                <option>Rhode Island</option>
+                                <option>South Carolina</option>
+                                <option>South Dakota</option>
+                                <option>Tennessee</option>
+                                <option>Texas</option>
+                                <option>Utah</option>
+                                <option>Vermont</option>
+                                <option>Virginia</option>
+                                <option>Washington</option>
+                                <option>West Virginia</option>
+                                <option>Wisconsin</option>
+                                <option>Wyoming</option>
+                            </select>
+                        </div>
+                        <div><label data-i18n="postal_code">Postal Code</label><input type="text"></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 data-i18n="card_info">Card Information</h3>
+                    <label data-i18n="card_number">Card Number</label>
+                    <input type="text" placeholder="XXXX XXXX XXXX XXXX">
+                    <div class="grid-2">
+                        <div><label data-i18n="mmyy">MM/YY</label><input type="text" placeholder="MM/YY"></div>
+                        <div><label data-i18n="cvv">CVV</label><input type="text" placeholder="123"></div>
+                    </div>
+                    <label><input type="checkbox"> <span data-i18n="receive_receipt">Optional: Receive email receipt?</span></label>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <button type="submit" class="btn-action btn-donate" style="width:200px; margin: 0;" data-i18n="submit">Submit</button>
+                    <button type="button" class="btn-cancel" style="width:200px;" onclick="showView('map-view')" data-i18n="cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="help-view" class="view-section">
+            <button class="btn-cancel" onclick="showView('map-view')" data-i18n="back">← Back</button>
+            <h2 data-i18n="help_title">Help & FAQ</h2>
+            <div class="form-section">
+                <h3 data-i18n="help_q1">How do I find a food pantry?</h3>
+                <p data-i18n="help_a1">Use the interactive map on the main screen. You can click on any marker to see details about that specific pantry, including its hours and current status.</p>
+                
+                <h3 data-i18n="help_q2">How do I filter pantries by dietary restrictions?</h3>
+                <p data-i18n="help_a2">In the left sidebar under "Nutrition Filters", simply check the boxes that apply to your dietary needs. The map will automatically update to show only pantries that offer matching items.</p>
+                
+                <h3 data-i18n="help_q3">How do I save a pantry for later?</h3>
+                <p data-i18n="help_a3">Click on a pantry marker on the map to open its details, then click the "Save" button. You can view all your saved locations by clicking "View Saved Pantries" in the sidebar.</p>
+
+                <h3 data-i18n="help_q4">How can I make a donation?</h3>
+                <p data-i18n="help_a4">Click "Donate" in the left sidebar or select "Donate" directly from a pantry's details window on the map. Fill out the secure form to complete your contribution.</p>
+            </div>
+        </div>
+
+        <div id="success-view" class="view-section" style="text-align:center;">
+            <h1 style="font-size:80px; color:#2ecc71; margin-bottom:0;">✓</h1>
+            <h2 data-i18n="success">Successful Donation!</h2>
+            <p data-i18n="thanks">Thanks for donating!</p>
+            <button class="btn-action btn-save" style="width:200px; margin:auto;" onclick="showView('map-view')" data-i18n="return_btn">RETURN</button>
+        </div>
+    </div>
+
+    <div id="details-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="btn-close" onclick="closeModal('details-modal')">&times;</span>
+            <h2 id="m-name">Pantry Name</h2>
+            <p id="m-addr" style="font-style:italic; color:#444;"></p>
+            <div id="m-tags" style="margin-bottom:10px;"></div>
+            <p><strong id="lbl-hours">Hours:</strong> <span id="m-hours"></span></p>
+            <p><strong id="lbl-status">Status:</strong> <span id="m-status"></span></p>
+            <div style="margin-top:20px;">
+                <button id="m-save-btn" class="btn-action" onclick="toggleSave()">Save</button>
+                <button class="btn-action btn-donate" onclick="goToDonateFromPantry()" data-i18n="donate">Donate</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="saved-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="btn-close" onclick="closeModal('saved-modal')">&times;</span>
+            <h2 data-i18n="saved_title">Saved Pantries</h2>
+            <div id="saved-list"></div>
+        </div>
+    </div>
+
+<script>
+    // Translation Dictionary
+    const translations = {
+  en: { missing_login_fields: "Please enter both email and password" },
+  es: { missing_login_fields: "Por favor ingrese correo y contraseña" },
+  fr: { missing_login_fields: "Veuillez entrer l'email et le mot de passe" },
+        en: {
+            title: "PantryPoint", lang_label: "Language:", view_saved: "View Saved Pantries",
+            update_info: "Update Pantry Info", donate: "Donate", filters: "Nutrition Filters",
+            nut_free: "Nut free", lactose_free: "Lactose Free", vegetarian: "Vegetarian", vegan: "Vegan",
+            gluten_free: "Gluten Free", help_faq: "Help / FAQ", back: "← Back", signin: "Sign in to your account",
+            email: "Email address", password: "Password", submit: "Submit", cancel: "Cancel",
+            register: "Don't have an account? Register Here", update_title: "Update Pantry Information",
+            add_photo: "Add a photo", update_desc: "Update Pantry Description", desc_placeholder: "Current Description...",
+            update_inv: "Update Inventory", search_item: "Search for item", update_tags: "Update Directory Tags",
+            search_tag: "Search for tag", save_changes: "Save Changes", donate_title: "Make a Donation",
+            org_info: "Organization Information", search_org: "Search for Organization", select: "-- Select --",
+            amount: "Amount", cardholder_info: "Cardholder Information", first_name: "First Name",
+            last_name: "Last Name", address: "Address", city: "City", state: "State", postal_code: "Postal Code",
+            card_info: "Card Information", card_number: "Card Number", mmyy: "MM/YY", cvv: "CVV",
+            receive_receipt: "Optional: Receive email receipt?", help_title: "Help & FAQ",
+            help_q1: "How do I find a food pantry?", help_a1: "Use the interactive map on the main screen. You can click on any marker to see details about that specific pantry, including its hours and current status.",
+            help_q2: "How do I filter pantries by dietary restrictions?", help_a2: "In the left sidebar under 'Nutrition Filters', simply check the boxes that apply to your dietary needs. The map will automatically update to show only pantries that offer matching items.",
+            help_q3: "How do I save a pantry for later?", help_a3: "Click on a pantry marker on the map to open its details, then click the 'Save' button. You can view all your saved locations by clicking 'View Saved Pantries' in the sidebar.",
+            help_q4: "How can I make a donation?", help_a4: "Click 'Donate' in the left sidebar or select 'Donate' directly from a pantry's details window on the map. Fill out the secure form to complete your contribution.",
+            success: "Successful Donation!", thanks: "Thanks for donating!", return_btn: "RETURN",
+            hours: "Hours:", status: "Status:", save: "Save", remove: "Remove", saved_title: "Saved Pantries",
+            no_saved: "No items saved.", open: "Open", loc_title: "Allow Location Access?",
+            loc_desc: "This app would like to use your location to show nearby food pantries.", allow: "Allow", deny: "Deny",
+            info_updated: "Information updated!",
+            invalid_pantry: "Please select a pantry.", invalid_amount: "Please enter a valid donation amount.",
+            status_nofoodcurrentlyavailable: "No food currently available", status_limitedsupply: "Limited supply",
+            status_available: "Available", status_busy: "Busy", tag_glutenfree: "Gluten Free", tag_vegan: "Vegan",
+            tag_nutfree: "Nut Free", tag_lactosefree: "Lactose Free", tag_vegetarian: "Vegetarian"
+        },
+        es: {
+            title: "Buscar Banco de Alimentos", lang_label: "Idioma:", view_saved: "Ver Bancos Guardados",
+            update_info: "Actualizar Información", donate: "Donar", filters: "Filtros de Nutrición",
+            nut_free: "Sin nueces", lactose_free: "Sin lactosa", vegetarian: "Vegetariano", vegan: "Vegano",
+            gluten_free: "Sin gluten", help_faq: "Ayuda / FAQ", back: "← Volver", signin: "Iniciar sesión",
+            email: "Correo electrónico", password: "Contraseña", submit: "Enviar", cancel: "Cancelar",
+            register: "¿No tienes cuenta? Regístrate aquí", update_title: "Actualizar Información",
+            add_photo: "Añadir foto", update_desc: "Actualizar Descripción", desc_placeholder: "Descripción actual...",
+            update_inv: "Actualizar Inventario", search_item: "Buscar artículo", update_tags: "Actualizar Etiquetas",
+            search_tag: "Buscar etiqueta", save_changes: "Guardar Cambios", donate_title: "Hacer una Donación",
+            org_info: "Información de la Organización", search_org: "Buscar Organización", select: "-- Seleccionar --",
+            amount: "Cantidad", cardholder_info: "Información del Titular", first_name: "Nombre",
+            last_name: "Apellido", address: "Dirección", city: "Ciudad", state: "Estado", postal_code: "Código Postal",
+            card_info: "Información de la Tarjeta", card_number: "Número de Tarjeta", mmyy: "MM/AA", cvv: "CVV",
+            receive_receipt: "Opcional: ¿Recibir recibo por correo?", help_title: "Ayuda y FAQ",
+            help_q1: "¿Cómo encuentro un banco de alimentos?", help_a1: "Usa el mapa interactivo. Haz clic en cualquier marcador para ver detalles, horarios y estado.",
+            help_q2: "¿Cómo filtro por restricciones dietéticas?", help_a2: "En la barra lateral izquierda, marca las casillas correspondientes. El mapa se actualizará automáticamente.",
+            help_q3: "¿Cómo guardo un banco de alimentos?", help_a3: "Haz clic en un marcador, luego en 'Guardar'. Puedes verlos en 'Ver Bancos Guardados'.",
+            help_q4: "¿Cómo puedo hacer una donación?", help_a4: "Haz clic en 'Donar' en la barra lateral o en los detalles del banco. Llena el formulario.",
+            success: "¡Donación Exitosa!", thanks: "¡Gracias por donar!", return_btn: "VOLVER",
+            hours: "Horario:", status: "Estado:", save: "Guardar", remove: "Eliminar", saved_title: "Bancos Guardados",
+            no_saved: "No hay elementos guardados.", open: "Abrir", loc_title: "¿Permitir acceso a la ubicación?",
+            loc_desc: "Esta aplicación desea usar tu ubicación para mostrar bancos cercanos.", allow: "Permitir", deny: "Denegar",
+            info_updated: "¡Información actualizada!",
+            invalid_pantry: "Selecciona una despensa.", invalid_amount: "Ingresa una cantidad de donación válida.",
+            status_nofoodcurrentlyavailable: "No hay comida disponible", status_limitedsupply: "Suministro limitado",
+            status_available: "Disponible", status_busy: "Ocupado", tag_glutenfree: "Sin gluten", tag_vegan: "Vegano",
+            tag_nutfree: "Sin nueces", tag_lactosefree: "Sin lactosa", tag_vegetarian: "Vegetariano"
+        },
+        fr: {
+            title: "Trouver une Banque Alimentaire", lang_label: "Langue:", view_saved: "Voir les Banques",
+            update_info: "Mettre à jour les Infos", donate: "Faire un Don", filters: "Filtres Nutritionnels",
+            nut_free: "Sans noix", lactose_free: "Sans lactose", vegetarian: "Végétarien", vegan: "Végan",
+            gluten_free: "Sans gluten", help_faq: "Aide / FAQ", back: "← Retour", signin: "Connectez-vous à votre compte",
+            email: "Adresse e-mail", password: "Mot de passe", submit: "Soumettre", cancel: "Annuler",
+            register: "Pas de compte ? Inscrivez-vous ici", update_title: "Mettre à jour les infos",
+            add_photo: "Ajouter une photo", update_desc: "Mettre à jour la description", desc_placeholder: "Description actuelle...",
+            update_inv: "Mettre à jour l'inventaire", search_item: "Rechercher un article", update_tags: "Mettre à jour les étiquettes",
+            search_tag: "Rechercher une étiquette", save_changes: "Enregistrer", donate_title: "Faire un Don",
+            org_info: "Informations sur l'Organisation", search_org: "Rechercher une Organisation", select: "-- Sélectionner --",
+            amount: "Montant", cardholder_info: "Informations du Titulaire", first_name: "Prénom",
+            last_name: "Nom", address: "Adresse", city: "Ville", state: "État", postal_code: "Code Postal",
+            card_info: "Informations de la Carte", card_number: "Numéro de Carte", mmyy: "MM/AA", cvv: "CVV",
+            receive_receipt: "Optionnel : Recevoir un reçu ?", help_title: "Aide et FAQ",
+            help_q1: "Comment trouver une banque alimentaire ?", help_a1: "Utilisez la carte interactive. Cliquez sur un marqueur pour voir les détails, horaires et statut.",
+            help_q2: "Comment filtrer par restrictions ?", help_a2: "Dans la barre latérale gauche, cochez les cases correspondantes. La carte se mettra à jour automatiquement.",
+            help_q3: "Comment enregistrer une banque ?", help_a3: "Cliquez sur un marqueur, puis sur 'Enregistrer'. Retrouvez-les dans 'Voir les Banques'.",
+            help_q4: "Comment puis-je faire un don ?", help_a4: "Cliquez sur 'Faire un Don' dans la barre latérale ou les détails. Remplissez le formulaire.",
+            success: "Don Réussi !", thanks: "Merci pour votre don !", return_btn: "RETOUR",
+            hours: "Horaires:", status: "Statut:", save: "Enregistrer", remove: "Retirer", saved_title: "Banques Enregistrées",
+            no_saved: "Aucun élément enregistré.", open: "Ouvrir", loc_title: "Autoriser l'accès à la position ?",
+            loc_desc: "Cette application souhaite utiliser votre position pour afficher les banques alimentaires à proximité.", allow: "Autoriser", deny: "Refuser",
+            info_updated: "Informations mises à jour !",
+            invalid_pantry: "Veuillez sélectionner une banque alimentaire.", invalid_amount: "Veuillez saisir un montant de don valide.",
+            status_nofoodcurrentlyavailable: "Aucune nourriture disponible", status_limitedsupply: "Stock limité",
+            status_available: "Disponible", status_busy: "Occupé", tag_glutenfree: "Sans gluten", tag_vegan: "Végan",
+            tag_nutfree: "Sans noix", tag_lactosefree: "Sans lactose", tag_vegetarian: "Végétarien"
+        }
+    };
+
+    let currentLang = 'en';
+
+    function changeLanguage() {
+        const lang = document.getElementById('lang-select').value;
+        currentLang = 'en';
+        if(lang === 'Español') currentLang = 'es';
+        if(lang === 'Français') currentLang = 'fr';
+
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if(translations[currentLang][key]) {
+                el.innerText = translations[currentLang][key];
+            }
+        });
+
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if(translations[currentLang][key]) {
+                el.placeholder = translations[currentLang][key];
+            }
+        });
+
+        if(activeId && document.getElementById('details-modal').classList.contains('active')) {
+            openDetails(activeId);
+        }
+    }
+
+    const pantries = [
+        { id: 'j_pantry', name: 'J. Pantry', addr: '1 Boston av.', lat: 40.716, lng: -73.993, hours: '8:00am - 6:00pm', status: 'No food currently available', tags: ['Gluten Free', 'Vegan'], isGlutenFree: true, isVegan: true, isVegetarian: true, isNutFree: false, isLactoseFree: false },
+        { id: 'e_pantry', name: 'E. Pantry', addr: '22 Delancey St', lat: 40.719, lng: -73.990, hours: '8:00am - 6:00pm', status: 'Limited supply', tags: ['Gluten Free', 'Nut Free'], isGlutenFree: true, isVegan: false, isVegetarian: true, isNutFree: true, isLactoseFree: false },
+        { id: 'a_pantry', name: 'A. Pantry', addr: '120 Clinton St', lat: 40.717, lng: -73.985, hours: '9:00am - 5:00pm', status: 'Available', tags: ['Vegan', 'Lactose Free'], isGlutenFree: false, isVegan: true, isVegetarian: true, isNutFree: false, isLactoseFree: true },
+        { id: 'b_pantry', name: 'B. Pantry', addr: '227 Bowery', lat: 40.722, lng: -73.993, hours: '24/7', status: 'Busy', tags: ['Vegetarian'], isGlutenFree: false, isVegan: false, isVegetarian: true, isNutFree: false, isLactoseFree: false },
+        { id: 'g_pantry', name: 'G. Pantry', addr: '80 Pitt St', lat: 40.717, lng: -73.981, hours: '10:00am - 4:00pm', status: 'Available', tags: ['Nut Free'], isGlutenFree: false, isVegan: false, isVegetarian: false, isNutFree: true, isLactoseFree: false }
+    ];
+
+    let map, markers = [];
+    let savedIds = [];
+    let activeId = null;
+
+    function initMap() {
+        map = L.map('map').setView([40.717, -73.988], 15);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            subdomains: 'abcd',
+            maxZoom: 20,
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+        }).addTo(map);
+        renderMarkers(pantries);
+    }
+
+    function renderMarkers(data) {
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+        data.forEach(p => {
+            const m = L.marker([p.lat, p.lng]).addTo(map);
+            m.on('click', () => openDetails(p.id));
+            markers.push(m);
+        });
+    }
+
+    function applyFilters() {
+        const checked = Array.from(document.querySelectorAll('.nutri-filter:checked')).map(c => c.value);
+        const filtered = pantries.filter(p => checked.every(f => p[f] === true));
+        renderMarkers(filtered);
+    }
+
+    function openDetails(id) {
+        activeId = id;
+        const p = pantries.find(x => x.id === id);
+        document.getElementById('m-name').innerText = p.name;
+        document.getElementById('m-addr').innerText = p.addr;
+        
+        document.getElementById('lbl-hours').innerText = translations[currentLang]['hours'];
+        document.getElementById('m-hours').innerText = p.hours;
+        
+        document.getElementById('lbl-status').innerText = translations[currentLang]['status'];
+        const statusKey = "status_" + p.status.replace(/\s+/g, '').toLowerCase();
+        document.getElementById('m-status').innerText = translations[currentLang][statusKey] || p.status;
+        
+        document.getElementById('m-tags').innerHTML = p.tags.map(t => {
+            const tagKey = "tag_" + t.replace(/\s+/g, '').toLowerCase();
+            const translatedTag = translations[currentLang][tagKey] || t;
+            return `<span style="background:#eee; padding:2px 5px; margin-right:5px; font-size:11px; border:1px solid #ccc; border-radius:3px;">${translatedTag}</span>`;
+        }).join('');
+        
+        const btn = document.getElementById('m-save-btn');
+        btn.innerText = savedIds.includes(id) ? translations[currentLang]['remove'] : translations[currentLang]['save'];
+        btn.className = "btn-action " + (savedIds.includes(id) ? "btn-remove" : "btn-save");
+        
+        document.getElementById('details-modal').classList.add('active');
+    }
+
+    function toggleSave() {
+        if(savedIds.includes(activeId)) savedIds = savedIds.filter(i => i !== activeId);
+        else savedIds.push(activeId);
+        openDetails(activeId);
+    }
+
+    function openSavedPantries() {
+        const list = document.getElementById('saved-list');
+        list.innerHTML = savedIds.length ? "" : translations[currentLang]['no_saved'];
+        savedIds.forEach(id => {
+            const p = pantries.find(x => x.id === id);
+            list.innerHTML += `<div style="border-bottom:1px solid #ccc; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+                <span>${p.name}</span>
+                <button class="btn-action btn-save" style="padding: 5px 10px; font-size: 12px;" onclick="openDetails('${p.id}'); closeModal('saved-modal');">${translations[currentLang]['open']}</button>
+            </div>`;
+        });
+        document.getElementById('saved-modal').classList.add('active');
+    }
+
+    function showView(viewId) {
+        closeModal('saved-modal');
+        closeModal('details-modal');
+        document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+        if(viewId !== 'map-view') document.getElementById(viewId).classList.add('active');
+        if(viewId === 'map-view' && map) setTimeout(() => map.invalidateSize(), 200);
+    }
+
+    function getActiveViewId() {
+        const activeView = document.querySelector('.view-section.active');
+        return activeView ? activeView.id : 'map-view';
+    }
+
+    function toggleSidebarView(viewId) {
+        const currentView = getActiveViewId();
+        if (currentView === viewId) {
+            showView('map-view');
+        } else {
+            showView(viewId);
+        }
+    }
+
+    function toggleSidebarSaved() {
+        const savedModal = document.getElementById('saved-modal');
+        const currentView = getActiveViewId();
+        if (savedModal.classList.contains('active')) {
+            closeModal('saved-modal');
+            showView('map-view');
+            return;
+        }
+        if (currentView !== 'map-view') {
+            showView('map-view');
+        }
+        openSavedPantries();
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    function submitDonation(event) {
+        event.preventDefault();
+        const pantry = document.getElementById('donate-org').value;
+        const amountRaw = document.getElementById('donate-amount').value.trim();
+        const normalizedAmount = amountRaw.replace(/[$,\s]/g, '');
+        const amount = Number(normalizedAmount);
+
+        if (!pantry) {
+            alert(translations[currentLang]['invalid_pantry'] || 'Please select a pantry.');
+            return;
+        }
+
+        if (!normalizedAmount || !Number.isFinite(amount) || amount <= 0) {
+            alert(translations[currentLang]['invalid_amount'] || 'Please enter a valid donation amount.');
+            return;
+        }
+
+        showView('success-view');
+    }
+
+    function saveUpdate(event) {
+        event.preventDefault();
+        alert(translations[currentLang]['info_updated'] || 'Information updated!');
+        showView('map-view');
+    }
+
+    window.onload = initMap;
+
+    let userMarker = null;
+
+    function allowLocation() {
+        closeModal('location-modal');
+        const userLat = 40.7175;
+        const userLng = -73.9875;
+        userMarker = L.circleMarker([userLat, userLng], {
+            radius: 8, color: '#ffffff', weight: 2, fillColor: '#3498db', fillOpacity: 1
+        }).addTo(map);
+        map.setView([userLat, userLng], 15);
+    }
+
+    function denyLocation() {
+        closeModal('location-modal');
+    }
+
+function goToDonateFromPantry() {
+    closeModal('details-modal');
+    showView('donate-view');
+    const dropdown = document.getElementById('donate-org');
+    if (dropdown && activeId) {
+        dropdown.value = activeId;
+    }
+}
+
+</script>
+
+<div id="location-modal" class="modal-overlay active">
+    <div class="modal-content" style="text-align:center;">
+        <h2 data-i18n="loc_title">Allow Location Access?</h2>
+        <p data-i18n="loc_desc">This app would like to use your location to show nearby food pantries.</p>
+        <div style="margin-top:20px;">
+            <button class="btn-action btn-save" onclick="allowLocation()" data-i18n="allow">Allow</button>
+            <button class="btn-action btn-remove" onclick="denyLocation()" data-i18n="deny">Deny</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const emailInput = document.getElementById("login-email");
+  const passwordInput = document.getElementById("login-password");
+  if (!emailInput || !passwordInput) return;
+
+  const form = emailInput.closest("form");
+  if (!form) return;
+
+  form.setAttribute("novalidate", "novalidate");
+
+  form.addEventListener("submit", function (e) {
+    const email = (emailInput.value || "").trim();
+    const password = (passwordInput.value || "").trim();
+
+    if (email === "" || password === "") {
+      e.preventDefault();
+      e.stopPropagation();
+      alert(getText("missing_login_fields"));
+      return false;
+    }
+  }, true);
+});
+</script>
+
+</body>
+</html>
