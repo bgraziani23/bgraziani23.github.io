@@ -128,7 +128,7 @@ function getText(key) {
                 padding: 10px 15px;
                 overflow: hidden;
                 transition: max-height 0.3s ease;
-                max-height: 58px; /* collapsed: show header row + tagline */
+                max-height: 70px; /* collapsed: show logo + tagline */
                 position: relative;
             }
 
@@ -197,17 +197,15 @@ function getText(key) {
         <!-- Mobile toggle header -->
         <div class="sidebar-toggle" onclick="toggleMobileSidebar()">
             <div>
-                <h2 data-i18n="title">PantryPoint</h2>
-                <p style="margin: 0; font-size: 12px; color: #555;">Find a food pantry that best fits your needs!</p>
+                <img src="logo.png" alt="PantryPoint" style="height: 36px; display: block;">
+                <p style="margin: 2px 0 0 0; font-size: 12px; color: #555;">Find a food pantry that best fits your needs!</p>
             </div>
             <span class="toggle-arrow">&#9660;</span>
         </div>
 
         <!-- Desktop title -->
-        <h2 style="cursor:pointer;" onclick="showView('map-view')" data-i18n="title">
-            PantryPoint
-        </h2>
-        <p class="desktop-tagline" style="margin: -8px 0 12px 0; font-size: 12px; color: #555;">Find a food pantry that best fits your needs!</p>
+        <img src="logo.png" alt="PantryPoint" onclick="showView('map-view')" style="width: 100%; max-width: 200px; cursor: pointer; display: block; margin-bottom: 4px;">
+        <p class="desktop-tagline" style="margin: 0 0 12px 0; font-size: 12px; color: #555;">Find a food pantry that best fits your needs!</p>
 
         <div class="sidebar-content">
         <div style="margin-bottom: 15px;">
