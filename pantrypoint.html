@@ -188,25 +188,57 @@ function getText(key) {
                 left: 0;
                 width: 100%;
             }
+            .desktop-brand {
+                display: block;
+                margin-bottom: 12px;
+            }
+            .desktop-logo {
+                display: block;
+                width: 100%;
+                max-width: 260px;
+                height: auto;
+                cursor: pointer;
+                margin-bottom: 6px;
+            }
+            .desktop-tagline {
+                margin: 0 0 12px 0;
+                font-size: 12px;
+                color: #555;
+            }
+            .mobile-brand {
+                display: flex;
+                flex-direction: column;
+            }
+            .mobile-logo {
+                height: 40px;
+                width: auto;
+                display: block;
+            }
+            .mobile-tagline {
+                margin: 2px 0 0 0;
+                font-size: 12px;
+                color: #555;
+            }
         }
     </style>
 </head>
 <body>
 
     <div class="sidebar" id="main-sidebar">
-        <!-- Mobile toggle header -->
-        <div class="sidebar-toggle" onclick="toggleMobileSidebar()">
-            <div>
-                <img src="logo.png" alt="PantryPoint" style="height: 36px; display: block;">
-                <p style="margin: 2px 0 0 0; font-size: 12px; color: #555;">Find a food pantry that best fits your needs!</p>
+       <!-- Mobile toggle header -->
+       <div class="sidebar-toggle" onclick="toggleMobileSidebar()">
+            <div class="mobile-brand">
+                <img src="logo.png" alt="PantryPoint" class="mobile-logo">
+                <p class="mobile-tagline">Find a food pantry that best fits your needs!</p>
             </div>
             <span class="toggle-arrow">&#9660;</span>
         </div>
 
-        <!-- Desktop title -->
-        <img src="logo.png" alt="PantryPoint" onclick="showView('map-view')" style="width: 100%; max-width: 200px; cursor: pointer; display: block; margin-bottom: 4px;">
-        <p class="desktop-tagline" style="margin: 0 0 12px 0; font-size: 12px; color: #555;">Find a food pantry that best fits your needs!</p>
-
+    <!-- Desktop logo -->
+    <div class="desktop-brand">
+        <img src="logo.png" alt="PantryPoint" class="desktop-logo" onclick="showView('map-view')">
+        <p class="desktop-tagline">Find a food pantry that best fits your needs!</p>
+    </div>
         <div class="sidebar-content">
         <div style="margin-bottom: 15px;">
             <label for="lang-select" style="font-size: 12px;" data-i18n="lang_label">Language:</label>
