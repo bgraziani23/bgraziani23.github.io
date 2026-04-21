@@ -112,15 +112,104 @@ function getText(key) {
         
         .btn-cancel { background: #95a5a6; color: white; padding: 10px 20px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; transition: background 0.2s; }
         .btn-cancel:hover { background: #7f8c8d; }
+
+        /* MOBILE SIDEBAR TOGGLE */
+        .sidebar-toggle {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #ccc;
+                padding: 10px 15px;
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+                max-height: 58px; /* collapsed: show header row + tagline */
+                position: relative;
+            }
+
+            .sidebar.open {
+                max-height: 600px; /* enough to show all content */
+            }
+
+            .sidebar-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                cursor: pointer;
+                user-select: none;
+                margin-bottom: 0;
+            }
+
+            .sidebar-toggle h2 {
+                margin: 0;
+                font-size: 18px;
+                text-decoration: underline;
+                color: #2c3e50;
+            }
+
+            .sidebar-toggle .toggle-arrow {
+                font-size: 18px;
+                color: #2c3e50;
+                transition: transform 0.3s ease;
+                line-height: 1;
+            }
+
+            .sidebar.open .toggle-arrow {
+                transform: rotate(180deg);
+            }
+
+            /* Hide the original h2 title on mobile (replaced by toggle header) */
+            .sidebar > h2:first-of-type {
+                display: none;
+            }
+            .desktop-tagline {
+                display: none;
+            }
+
+            .sidebar-content {
+                margin-top: 12px;
+            }
+
+            .main-content {
+                flex: 1;
+                min-height: 0;
+            }
+
+            #map {
+                height: 100%;
+            }
+
+            #saved-modal {
+                left: 0;
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
+    <div class="sidebar" id="main-sidebar">
+        <!-- Mobile toggle header -->
+        <div class="sidebar-toggle" onclick="toggleMobileSidebar()">
+            <div>
+                <h2 data-i18n="title">PantryPoint</h2>
+                <p style="margin: 0; font-size: 12px; color: #555;">Find a food pantry that best fits your needs!</p>
+            </div>
+            <span class="toggle-arrow">&#9660;</span>
+        </div>
+
+        <!-- Desktop title -->
         <h2 style="cursor:pointer;" onclick="showView('map-view')" data-i18n="title">
             PantryPoint
-        </h2>     
-        
+        </h2>
+        <p class="desktop-tagline" style="margin: -8px 0 12px 0; font-size: 12px; color: #555;">Find a food pantry that best fits your needs!</p>
+
+        <div class="sidebar-content">
         <div style="margin-bottom: 15px;">
             <label for="lang-select" style="font-size: 12px;" data-i18n="lang_label">Language:</label>
             <select id="lang-select" style="margin: 0; padding: 6px; margin-top: 4px;" onchange="changeLanguage()">
@@ -143,7 +232,8 @@ function getText(key) {
             <label class="filter-item"><input type="checkbox" class="nutri-filter" value="isGlutenFree" onchange="applyFilters()"> <span data-i18n="gluten_free">Gluten Free</span></label>
         </div>
 
-        <button class="btn-sidebar" onclick="toggleSidebarView('help-view')" data-i18n="help_faq" style="margin-top: auto;">Help / FAQ</button>
+        <button class="btn-sidebar" onclick="toggleSidebarView('help-view')" data-i18n="help_faq" style="margin-top: 10px;">Help / FAQ</button>
+        </div>
     </div>
 
     <div class="main-content">
@@ -612,6 +702,12 @@ function getText(key) {
     }
 
     window.onload = initMap;
+
+    function toggleMobileSidebar() {
+        const sidebar = document.getElementById('main-sidebar');
+        sidebar.classList.toggle('open');
+        if (map) setTimeout(() => map.invalidateSize(), 350);
+    }
 
     let userMarker = null;
 
